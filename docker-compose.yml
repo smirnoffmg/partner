@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: go-telegram-bot-template
+    container_name: go-telegram-bot-template-container
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/home/appuser/config.yaml:ro
+    restart: always
