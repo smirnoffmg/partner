@@ -117,6 +117,12 @@ func (s *ChatGPTService) GetAnswer(telegramChatID int64, question string) (strin
 		if run.Status == openai.RunStatusCompleted {
 			break
 		}
+
+		if run.Status == openai.RunStatusFailed {
+			log.Error().Msg("Run failed")
+			return "Sorry, cannot answer right now. Please ask later", nil
+		}
+
 		<-time.After(5 * time.Second)
 	}
 
