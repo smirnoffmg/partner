@@ -4,6 +4,8 @@
 
 Partner is a Telegram bot that integrates with OpenAI's ChatGPT Assistant to provide an intelligent assistant within your Telegram chats. This bot leverages the power of ChatGPT to understand and respond to user queries in a conversational manner.
 
+![scheme](docs/scheme.png)
+
 ## Features
 
 - **Natural Language Processing**: Uses ChatGPT to understand and respond to queries.
