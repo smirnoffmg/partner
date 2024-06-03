@@ -112,22 +112,21 @@ func (s *ChatGPTService) GetAnswer(telegramChatID int64, question string) (strin
 			log.Error().Err(err).Msg("Failed to get run")
 			return "", err
 		}
-		log.Info().Msgf("Run status: %s", run.Status)
+
+		log.Debug().Msgf("Run status: %s", run.Status)
 
 		if run.Status == openai.RunStatusCompleted {
 			break
 		}
 
 		if run.Status == openai.RunStatusFailed {
-			log.Error().Msg("Run failed")
+			log.Error().Msg(run.LastError.Message)
 			return "Sorry, cannot answer right now. Please ask later", nil
 		}
-
 		<-time.After(5 * time.Second)
 	}
 
 	// get messages
-	log.Debug().Msgf("Last message id: %s", chat.LastThreadMessageID)
 
 	var limit *int = new(int)
 	*limit = 1

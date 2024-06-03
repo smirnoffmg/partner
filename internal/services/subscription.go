@@ -12,3 +12,7 @@ func NewSubscriptionService(repo *repositories.ChatsRepo) (svc *SubscriptionServ
 	}
 	return
 }
+
+func (s *SubscriptionService) IncreaseMessageCount(chatID int64) {
+	s.chatsRepo.IncreaseMessageCount(chatID)
+}

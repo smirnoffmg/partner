@@ -50,11 +50,18 @@ func run(ctx context.Context) error {
 	chatGPTService, err := services.NewChatGPTService(chatsRepo, cfg.OpenaiApiKey, cfg.OpenaiAssistantId, cfg.Name)
 
 	if err != nil {
-		log.Error().Err(err).Msg("Cannot create chatGPTService")
+		log.Error().Err(err).Msg("Cannot create chatGPT service")
 		return err
 	}
 
-	bot, err := ports.NewTGBot(cfg.TelegramBotToken, chatGPTService)
+	subscrService, err := services.NewSubscriptionService(chatsRepo)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Cannot create subscription service")
+		return err
+	}
+
+	bot, err := ports.NewTGBot(cfg.TelegramBotToken, chatGPTService, subscrService)
 
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")

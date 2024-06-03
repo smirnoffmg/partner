@@ -35,3 +35,7 @@ func (r *ChatsRepo) FindByThreadID(threadID string) (*entities.Chat, error) {
 func (r *ChatsRepo) UpdateLastMessageID(threadID string, messageID string) error {
 	return r.DB.Model(&entities.Chat{}).Where("thread_id = ?", threadID).Update("last_thread_message_id", messageID).Error
 }
+
+func (r *ChatsRepo) IncreaseMessageCount(chatID int64) {
+	r.DB.Model(&entities.Chat{}).Where("telegram_chat_id = ?", chatID).Update("user_messages_count", gorm.Expr("user_messages_count + ?", 1))
+}
