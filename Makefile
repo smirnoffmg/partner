@@ -1,7 +1,7 @@
 include .env
 export
 
-DOCKER_IMAGE_NAME=go-telegram-bot-template
+DOCKER_IMAGE_NAME=partner
 
 docker:
 	docker build -t $(DOCKER_IMAGE_NAME) .

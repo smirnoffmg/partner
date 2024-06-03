@@ -1,89 +1,63 @@
+# Partner: A Telegram Bot with ChatGPT Integration
 
-# Go Telegram Bot Template
+## Overview
 
-This is a template for creating Telegram bots using Go. It includes a Dockerfile and docker-compose configuration for easy deployment.
+Partner is a Telegram bot that integrates with OpenAI's ChatGPT Assistant to provide an intelligent assistant within your Telegram chats. This bot leverages the power of ChatGPT to understand and respond to user queries in a conversational manner.
 
 ## Features
 
-- Simple and clean project structure
-- Dockerized for easy deployment
-- Example configuration file
-
-## Prerequisites
-
-- Go 1.22 or later
-- Docker
-- Docker Compose
+- **Natural Language Processing**: Uses ChatGPT to understand and respond to queries.
+- **Dockerized**: The bot is packaged as a Docker container for easy deployment.
 
 ## Getting Started
 
-### Clone the Repository
+### Prerequisites
 
-```sh
-git clone https://github.com/smirnoffmg/partner.git
-cd go-telegram-bot-template
-```
+- Docker
+- Telegram account and bot token
+- OpenAI API key and assistant ID
 
-### Configuration
+### Setup
 
-1. Copy `.env.example` to `.env` and update the values as needed.
+1. **Clone the repository**:
 
-### Building and Running with Docker
+    ```sh
+    git clone https://github.com/smirnoffmg/partner.git
+    cd partner
+    ```
 
-#### Build and Start the Application
+2. **Create a `.env` file** with the following content:
 
-```sh
-docker-compose up --build -d
-```
+    ```env
+    PRTNR_NAME="Example Partner"
+    PRTNR_TELEGRAM_BOT_TOKEN=
+    PRTNR_OPENAI_API_KEY=
+    PRTNR_OPENAI_ASSISTANT_ID=
+    PRTNR_DB_DSN="host=db user=postgres password=postgres dbname=postgres"
 
-#### Stop the Application
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=postgres
+    ```
 
-```sh
-docker-compose down
-```
+3. **Run docker-compose**:
 
-### Running Locally
+    ```sh
+    docker-compose up --build
+    ```
 
-#### Build the Application
+## Usage
 
-```sh
-go build -o main .
-```
-
-#### Run the Application
-
-```sh
-./main
-```
-
-## Project Structure
-
-```plaintext
-.
-├── Dockerfile
-├── README.md
-├── config.yaml
-├── docker-compose.yml
-├── go.mod
-├── go.sum
-└── main.go
-```
-
-- `Dockerfile`: Docker configuration for building the Go application.
-- `docker-compose.yml`: Docker Compose configuration for running the application.
-- `config.yaml`: Configuration file for the application.
-- `go.mod` and `go.sum`: Go module files managing project dependencies.
-- `main.go`: Entry point for the Go application.
-- `internal/`: Directory for logic - interfaces, usecases, etc.
+Once the bot is running, you can start a chat with it on Telegram. The bot will respond to your messages using ChatGPT.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contributing
-
-Contributions are welcome! Please open an issue or submit a pull request.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
-If you have any questions or need further assistance, feel free to contact the repository owner.
+If you have any questions or suggestions, feel free to open an issue or reach out to the repository owner.
+Or you can contact me directly at [@not_again_please](https://t.me/not_again_please).
+
+---
+
+Happy chatting with your new intelligent assistant!
