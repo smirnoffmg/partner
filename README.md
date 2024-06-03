@@ -20,7 +20,7 @@ This is a template for creating Telegram bots using Go. It includes a Dockerfile
 ### Clone the Repository
 
 ```sh
-git clone https://github.com/smirnoffmg/go-telegram-bot-template.git
+git clone https://github.com/smirnoffmg/partner.git
 cd go-telegram-bot-template
 ```
 

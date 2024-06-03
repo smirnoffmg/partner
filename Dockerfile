@@ -25,7 +25,6 @@ RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && \
 WORKDIR /home/appuser/
 
 COPY --from=builder /app/main .
-COPY --from=builder /app/config.yaml .
 
 RUN chown -R appuser:appgroup /home/appuser/
 

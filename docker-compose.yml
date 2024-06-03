@@ -5,10 +5,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: go-telegram-bot-template
-    container_name: go-telegram-bot-template-container
+    image: assistant
+    container_name: assistant-container
+    env_file:
+      - .env
+    restart: always
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    container_name: assistant-db
     env_file:
       - .env
     volumes:
-      - ./config.yaml:/home/appuser/config.yaml:ro
+      - pgdata:/var/lib/postgresql/data
     restart: always
+
+volumes:
+  pgdata:

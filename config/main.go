@@ -1,36 +1,26 @@
 package config
 
 import (
+	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/viper"
 )
 
 type Config struct {
-	TelegramBotToken string `mapstructure:"TELEGRAM_BOT_TOKEN"` // this from env
-	TelegramBotName  string `mapstructure:"telegram_bot_name"`  // this from config file
+	Name              string `split_words:"true"`
+	TelegramBotToken  string `split_words:"true"`
+	DbDsn             string `split_words:"true"`
+	OpenaiApiKey      string `split_words:"true"`
+	OpenaiAssistantId string `split_words:"true"`
+	Debug             bool   `split_words:"true"`
 }
 
-func LoadConfig(path string) (config Config, err error) {
-	viper.AddConfigPath(path)
+func LoadConfig() (config Config, err error) {
+	err = envconfig.Process("PRTNR", &config)
 
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-
-	err = viper.ReadInConfig()
 	if err != nil {
-		log.Fatal().Err(err).Msg("Cannot read config file")
+		log.Error().Err(err).Msg("Cannot load configuration")
 		return
 	}
-
-	// this is a magic line that will allow viper to read environment variables
-	viper.SetDefault("TELEGRAM_BOT_TOKEN", "")
-	viper.AutomaticEnv()
-
-	err = viper.Unmarshal(&config)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Cannot unmarshal config")
-		return
-	}
-
+	log.Info().Interface("config", config).Msg("Configuration loaded")
 	return
 }
