@@ -35,6 +35,44 @@ func NewTGBot(tgBotToken string, chatService *svc.ChatGPTService, subscrService 
 	}, nil
 }
 
+func (b *Bot) HandleMessage(update *tgbotapi.Update) {
+	if update.Message.Command() == "info" {
+		infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, infoMessage)
+		if _, err := b.bot.Send(infoMessageConfig); err != nil {
+			log.Error().Err(err)
+		}
+		return
+	}
+
+	if update.Message.Command() == "start" {
+		infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, startMessage)
+		if _, err := b.bot.Send(infoMessageConfig); err != nil {
+			log.Error().Err(err)
+
+		}
+		return
+	}
+
+	log.Debug().Msgf("Message from %s", update.Message.From.UserName)
+
+	answer, err := b.chatService.GetAnswer(update.Message.Chat.ID, update.Message.Text)
+
+	if err != nil {
+		log.Error().Err(err)
+		return
+	}
+
+	b.subscrService.IncreaseMessageCount(update.Message.Chat.ID)
+
+	answerMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, answer)
+	answerMessageConfig.ParseMode = "markdown"
+	answerMessageConfig.ReplyToMessageID = update.Message.MessageID
+
+	if _, err := b.bot.Send(answerMessageConfig); err != nil {
+		log.Error().Err(err)
+	}
+}
+
 func (b *Bot) Start() error {
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 30
@@ -45,41 +83,8 @@ func (b *Bot) Start() error {
 			continue
 		}
 
-		if update.Message.Command() == "info" {
-			infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, infoMessage)
-			if _, err := b.bot.Send(infoMessageConfig); err != nil {
-				log.Error().Err(err)
-				return err
-			}
-			continue
-		}
+		go b.HandleMessage(&update)
 
-		if update.Message.Command() == "start" {
-			infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, startMessage)
-			if _, err := b.bot.Send(infoMessageConfig); err != nil {
-				log.Error().Err(err)
-				return err
-			}
-			continue
-		}
-
-		log.Debug().Msgf("Message from %s", update.Message.From.UserName)
-
-		answer, err := b.chatService.GetAnswer(update.Message.Chat.ID, update.Message.Text)
-
-		if err != nil {
-			log.Error().Err(err)
-			return err
-		}
-
-		b.subscrService.IncreaseMessageCount(update.Message.Chat.ID)
-
-		answerMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, answer)
-
-		if _, err := b.bot.Send(answerMessageConfig); err != nil {
-			log.Error().Err(err)
-			return err
-		}
 	}
 
 	return nil

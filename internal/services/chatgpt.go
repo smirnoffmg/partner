@@ -89,7 +89,7 @@ func (s *ChatGPTService) GetAnswer(telegramChatID int64, question string) (strin
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create message")
-		return "", err
+		return "I'm still working on previous question. Please ask later", nil
 	}
 
 	// run assistant on thread
@@ -100,7 +100,7 @@ func (s *ChatGPTService) GetAnswer(telegramChatID int64, question string) (strin
 
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create run")
-		return "", err
+		return "I'm still working on previous question. Please ask later", nil
 	}
 
 	// wait for completion
