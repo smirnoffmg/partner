@@ -10,14 +10,20 @@ import (
 )
 
 type Config struct {
-	Author            string `split_words:"true"`
-	FreeMessagesCount int32  `split_words:"true"`
-	TelegramBotToken  string `split_words:"true"`
+	Author string `split_words:"true"`
+	Debug  bool   `split_words:"true"`
+
 	DBDsn             string `split_words:"true"`
+	TelegramBotToken  string `split_words:"true"`
 	OpenaiAPIKey      string `split_words:"true"`
 	OpenaiAssistantID string `split_words:"true"`
-	Debug             bool   `split_words:"true"`
-	PaymentToken      string `split_words:"true"`
+
+	// payment
+	FreeMessagesCount int32  `split_words:"true"` // how many messages user can send for free
+	PaymentToken      string `split_words:"true"` // token for payment service
+	PricePerMsgPack   int64  `split_words:"true"` // price for one message pack
+	PriceCurrency     string `split_words:"true"` // currency for price
+	MsgPack           int32  `split_words:"true"` // how many messages in one pack
 }
 
 func loadConfig() (*Config, error) {
@@ -70,6 +76,8 @@ func NewApp() (*App, error) {
 
 		return nil, err
 	}
+
+	subscrService.SetPaymentInfo(cfg.MsgPack, cfg.PricePerMsgPack, cfg.PriceCurrency)
 
 	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService, cfg.PaymentToken)
 	if err != nil {

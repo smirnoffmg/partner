@@ -12,15 +12,13 @@ import (
 	"github.com/smirnoffmg/partner/internal/repositories"
 )
 
-const (
-	pricePerMsgPack = 99900
-	msgPack         = 50
-)
-
 type SubscriptionService struct {
 	chatsRepo         repositories.IChatRepo
 	invoicesRepo      repositories.IInvoiceRepo
 	freeMessagesCount int32
+	pricePerMsgPack   int64
+	msgPack           int32
+	currency          string
 }
 
 func NewSubscriptionService(chatsRepo repositories.IChatRepo, invoicesRepo repositories.IInvoiceRepo, freeMessagesCount int32) (*SubscriptionService, error) {
@@ -29,6 +27,12 @@ func NewSubscriptionService(chatsRepo repositories.IChatRepo, invoicesRepo repos
 		invoicesRepo:      invoicesRepo,
 		freeMessagesCount: freeMessagesCount,
 	}, nil
+}
+
+func (s *SubscriptionService) SetPaymentInfo(msgPack int32, pricePerMsgPack int64, currency string) {
+	s.msgPack = msgPack
+	s.pricePerMsgPack = pricePerMsgPack
+	s.currency = currency
 }
 
 func (s *SubscriptionService) IncreaseMessageCount(chatID int64) {
@@ -49,9 +53,9 @@ func (s *SubscriptionService) GetMessagesRemain(chatID int64) (int32, error) {
 func (s *SubscriptionService) CreateInvoice(chatID int64) (*entities.Invoice, error) {
 	invoice := &entities.Invoice{
 		Title:          fmt.Sprintf("Invoice #%s", time.Now().Format("2006-01-02-15:04:05")),
-		Description:    "50 messages",
-		Currency:       "RUB",
-		Amount:         pricePerMsgPack,
+		Description:    fmt.Sprintf("Payment for %d messages", s.msgPack),
+		Currency:       s.currency,
+		Amount:         s.pricePerMsgPack,
 		TelegramChatID: chatID,
 	}
 
@@ -124,7 +128,7 @@ func (s *SubscriptionService) ProcessPayment(payload string) error {
 		return fmt.Errorf("cannot update invoice with ID: %d", invoiceIDInt)
 	}
 
-	if err := s.chatsRepo.Update(chatIDInt, map[string]interface{}{"paid_messages_count": chat.PaidMessagesCount + msgPack}); err != nil {
+	if err := s.chatsRepo.Update(chatIDInt, map[string]interface{}{"paid_messages_count": chat.PaidMessagesCount + s.msgPack}); err != nil {
 		return fmt.Errorf("cannot update chat with ID: %d", chatIDInt)
 	}
 
