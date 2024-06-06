@@ -91,8 +91,8 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 			invoice.Currency,
 			prices)
 
-		invoiceMsg.MaxTipAmount = 5000
-		invoiceMsg.SuggestedTipAmounts = []int{1000, 2000, 3000, 5000}
+		invoiceMsg.MaxTipAmount = 0
+		invoiceMsg.SuggestedTipAmounts = []int{}
 
 		if _, err := b.bot.Send(invoiceMsg); err != nil {
 			log.Error().Err(err).Msg("Cannot send invoice")

@@ -13,12 +13,13 @@ import (
 )
 
 type SubscriptionService struct {
-	chatsRepo         repositories.IChatRepo
-	invoicesRepo      repositories.IInvoiceRepo
-	freeMessagesCount int32
-	pricePerMsgPack   int64
-	msgPack           int32
-	currency          string
+	chatsRepo          repositories.IChatRepo
+	invoicesRepo       repositories.IInvoiceRepo
+	freeMessagesCount  int32
+	pricePerMsgPack    int64
+	msgPack            int32
+	currency           string
+	paymentDescription string
 }
 
 func NewSubscriptionService(chatsRepo repositories.IChatRepo, invoicesRepo repositories.IInvoiceRepo, freeMessagesCount int32) (*SubscriptionService, error) {
@@ -29,10 +30,11 @@ func NewSubscriptionService(chatsRepo repositories.IChatRepo, invoicesRepo repos
 	}, nil
 }
 
-func (s *SubscriptionService) SetPaymentInfo(msgPack int32, pricePerMsgPack int64, currency string) {
+func (s *SubscriptionService) SetPaymentInfo(msgPack int32, pricePerMsgPack int64, currency string, paymentDescription string) {
 	s.msgPack = msgPack
 	s.pricePerMsgPack = pricePerMsgPack
 	s.currency = currency
+	s.paymentDescription = paymentDescription
 }
 
 func (s *SubscriptionService) IncreaseMessageCount(chatID int64) {
@@ -53,7 +55,7 @@ func (s *SubscriptionService) GetMessagesRemain(chatID int64) (int32, error) {
 func (s *SubscriptionService) CreateInvoice(chatID int64) (*entities.Invoice, error) {
 	invoice := &entities.Invoice{
 		Title:          fmt.Sprintf("Invoice #%s", time.Now().Format("2006-01-02-15:04:05")),
-		Description:    fmt.Sprintf("Payment for %d messages", s.msgPack),
+		Description:    s.paymentDescription,
 		Currency:       s.currency,
 		Amount:         s.pricePerMsgPack,
 		TelegramChatID: chatID,

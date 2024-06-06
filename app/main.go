@@ -19,11 +19,12 @@ type Config struct {
 	OpenaiAssistantID string `split_words:"true"`
 
 	// payment
-	FreeMessagesCount int32  `split_words:"true"` // how many messages user can send for free
-	PaymentToken      string `split_words:"true"` // token for payment service
-	PricePerMsgPack   int64  `split_words:"true"` // price for one message pack
-	PriceCurrency     string `split_words:"true"` // currency for price
-	MsgPack           int32  `split_words:"true"` // how many messages in one pack
+	FreeMessagesCount  int32  `split_words:"true"` // how many messages user can send for free
+	PaymentToken       string `split_words:"true"` // token for payment service
+	PricePerMsgPack    int64  `split_words:"true"` // price for one message pack
+	PriceCurrency      string `split_words:"true"` // currency for price
+	PaymentDescription string `split_words:"true"` // what to print in invoice
+	MsgPack            int32  `split_words:"true"` // how many messages in one pack
 }
 
 func loadConfig() (*Config, error) {
@@ -77,7 +78,7 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
-	subscrService.SetPaymentInfo(cfg.MsgPack, cfg.PricePerMsgPack, cfg.PriceCurrency)
+	subscrService.SetPaymentInfo(cfg.MsgPack, cfg.PricePerMsgPack, cfg.PriceCurrency, cfg.PaymentDescription)
 
 	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService, cfg.PaymentToken)
 	if err != nil {
