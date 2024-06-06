@@ -1,41 +1,55 @@
 package repositories
 
 import (
-	"gorm.io/gorm"
-
+	"github.com/rs/zerolog/log"
 	entities "github.com/smirnoffmg/partner/internal/entities"
+	"gorm.io/gorm"
 )
 
 type ChatsRepo struct {
-	DB *gorm.DB
+	db *gorm.DB
 }
 
 func NewChatsRepo(db *gorm.DB) *ChatsRepo {
 	return &ChatsRepo{
-		DB: db,
+		db: db,
 	}
 }
 
-func (r *ChatsRepo) Create(chat *entities.Chat) error {
-	return r.DB.Create(chat).Error
-}
-
-func (r *ChatsRepo) FindByTelegramChatID(chatID int64) (*entities.Chat, error) {
+func (r *ChatsRepo) GetOrCreate(chatID int64) (*entities.Chat, error) {
 	var chat entities.Chat
-	err := r.DB.Where("telegram_chat_id = ?", chatID).First(&chat).Error
-	return &chat, err
+
+	err := r.db.Where(entities.Chat{TelegramChatID: chatID}).FirstOrCreate(&chat).Error
+	if err != nil {
+		log.Error().Err(err).Msgf("Cannot find nor create chat with chatID: %d", chatID)
+
+		return nil, err
+	}
+
+	return &chat, nil
 }
 
-func (r *ChatsRepo) FindByThreadID(threadID string) (*entities.Chat, error) {
-	var chat entities.Chat
-	err := r.DB.Where("thread_id = ?", threadID).First(&chat).Error
-	return &chat, err
+func (r *ChatsRepo) Update(chatID int64, updates map[string]interface{}) error {
+	chat, err := r.GetOrCreate(chatID)
+	if err != nil {
+		return err
+	}
+
+	err = r.db.Model(&chat).Omit("id", "telegram_chat_id").Updates(updates).Error
+	if err != nil {
+		log.Error().Err(err).Msgf("Cannot update chat with chatID: %d", chatID)
+
+		return err
+	}
+
+	return nil
 }
 
-func (r *ChatsRepo) UpdateLastMessageID(threadID string, messageID string) error {
-	return r.DB.Model(&entities.Chat{}).Where("thread_id = ?", threadID).Update("last_thread_message_id", messageID).Error
-}
+func (r *ChatsRepo) IncreaseMessageCount(chatID int64) error {
+	err := r.db.Model(&entities.Chat{}).Where("telegram_chat_id = ?", chatID).UpdateColumn("user_messages_count", gorm.Expr("user_messages_count + ?", 1)).Error
+	if err != nil {
+		log.Error().Err(err).Msgf("Cannot increment messages count in chat with chatID: %d", chatID)
+	}
 
-func (r *ChatsRepo) IncreaseMessageCount(chatID int64) {
-	r.DB.Model(&entities.Chat{}).Where("telegram_chat_id = ?", chatID).Update("user_messages_count", gorm.Expr("user_messages_count + ?", 1))
+	return err
 }

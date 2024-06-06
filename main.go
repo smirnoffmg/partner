@@ -8,15 +8,12 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/smirnoffmg/partner/config"
-	"github.com/smirnoffmg/partner/internal/adapters"
-	"github.com/smirnoffmg/partner/internal/ports"
-	repo "github.com/smirnoffmg/partner/internal/repositories"
-	"github.com/smirnoffmg/partner/internal/services"
+	"github.com/smirnoffmg/partner/app"
 )
 
-func main() {
+const cancelTimeout = 3 * time.Second
 
+func main() {
 	ctx := context.Background()
 
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill, syscall.SIGTERM)
@@ -24,52 +21,22 @@ func main() {
 
 	if err := run(ctx); err != nil {
 		log.Error().Err(err).Msg("Run")
+
 		defer os.Exit(1)
 	}
-
 }
 
 func run(ctx context.Context) error {
-	log.Info().Msg("Loading configuration")
-	cfg, err := config.LoadConfig()
-
+	app, err := app.NewApp()
 	if err != nil {
-		log.Error().Err(err).Msg("Cannot load configuration")
+		log.Error().Err(err).Msg("Cannot create app")
+
 		return err
 	}
 
-	dbConn, err := adapters.NewDBConn(cfg)
+	if err := app.Start(); err != nil {
+		log.Error().Err(err).Msg("Problem with bot")
 
-	if err != nil {
-		log.Error().Err(err).Msg("Cannot connect to database")
-		return err
-	}
-
-	chatsRepo := repo.NewChatsRepo(dbConn)
-
-	chatGPTService, err := services.NewChatGPTService(chatsRepo, cfg.OpenaiApiKey, cfg.OpenaiAssistantId, cfg.Name)
-
-	if err != nil {
-		log.Error().Err(err).Msg("Cannot create chatGPT service")
-		return err
-	}
-
-	subscrService, err := services.NewSubscriptionService(chatsRepo)
-
-	if err != nil {
-		log.Error().Err(err).Msg("Cannot create subscription service")
-		return err
-	}
-
-	bot, err := ports.NewTGBot(cfg.TelegramBotToken, chatGPTService, subscrService)
-
-	if err != nil {
-		log.Error().Err(err).Msg("Cannot create bot")
-		return err
-	}
-
-	if err := bot.Start(); err != nil {
-		log.Error().Err(err).Msg("Problem inside bot.Start()")
 		return err
 	}
 
@@ -77,7 +44,7 @@ func run(ctx context.Context) error {
 
 	log.Info().Msg("Shutting down (waiting 3 seconds)...")
 
-	<-time.After(3 * time.Second)
+	<-time.After(cancelTimeout)
 
 	return nil
 }
