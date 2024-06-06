@@ -10,6 +10,8 @@ import (
 )
 
 type Config struct {
+	Author            string `split_words:"true"`
+	FreeMessagesCount int32  `split_words:"true"`
 	TelegramBotToken  string `split_words:"true"`
 	DBDsn             string `split_words:"true"`
 	OpenaiAPIKey      string `split_words:"true"`
@@ -60,14 +62,14 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
-	subscrService, err := services.NewSubscriptionService(chatsRepo)
+	subscrService, err := services.NewSubscriptionService(chatsRepo, cfg.FreeMessagesCount)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create subscription service")
 
 		return nil, err
 	}
 
-	bot, err := ports.NewTGBot(cfg.TelegramBotToken, chatGPTService, subscrService)
+	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")
 

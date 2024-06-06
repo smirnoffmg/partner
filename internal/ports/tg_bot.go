@@ -1,6 +1,8 @@
 package ports
 
 import (
+	"fmt"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/rs/zerolog/log"
 	svc "github.com/smirnoffmg/partner/internal/services"
@@ -10,15 +12,17 @@ type Bot struct {
 	bot           *tgbotapi.BotAPI
 	assistant     svc.IAssistant
 	subscrService *svc.SubscriptionService
+	author        string
 }
 
 const (
-	infoMessage       = "I'm a bot that can help you with your USMLE exam preparation.\nYou can contact my author @not_again_please for more info."
+	infoMessage       = "I'm a bot that can help you with your USMLE exam preparation.\nYou can contact my author %s for more info."
 	startMessage      = "Hello! How shall we start?"
+	payMessage        = "To continue please contact %s and tell him magic number %d. Price for 50 messages is 999 rubles."
 	freeMessagesCount = 50
 )
 
-func NewTGBot(tgBotToken string, assistant svc.IAssistant, subscrService *svc.SubscriptionService) (*Bot, error) {
+func NewTGBot(author string, tgBotToken string, assistant svc.IAssistant, subscrService *svc.SubscriptionService) (*Bot, error) {
 	bot, err := tgbotapi.NewBotAPI(tgBotToken)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")
@@ -33,13 +37,14 @@ func NewTGBot(tgBotToken string, assistant svc.IAssistant, subscrService *svc.Su
 		bot:           bot,
 		assistant:     assistant,
 		subscrService: subscrService,
+		author:        author,
 	}, nil
 }
 
 func (b *Bot) handleCommand(update tgbotapi.Update) {
 	if update.Message.Command() == "info" {
-		infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, infoMessage)
-		if _, err := b.bot.Send(infoMessageConfig); err != nil {
+		infoMsgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(infoMessage, b.author))
+		if _, err := b.bot.Send(infoMsgConfig); err != nil {
 			log.Error().Err(err).Msg("Cannot send info message")
 		}
 
@@ -47,32 +52,65 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 	}
 
 	if update.Message.Command() == "start" {
-		infoMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, startMessage)
-		if _, err := b.bot.Send(infoMessageConfig); err != nil {
+		startMsgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, startMessage)
+		if _, err := b.bot.Send(startMsgConfig); err != nil {
 			log.Error().Err(err).Msg("Cannot send start message")
+		}
+
+		return
+	}
+
+	if update.Message.Command() == "pay" {
+		payMsgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(payMessage, b.author, update.Message.Chat.ID))
+		if _, err := b.bot.Send(payMsgConfig); err != nil {
+			log.Error().Err(err).Msg("Cannot send pay message")
 		}
 
 		return
 	}
 }
 
+func (b *Bot) sendPayMessage(update tgbotapi.Update) {
+	msg := "Sorry, you've ran out of messages. Please use /pay to continue"
+
+	answerMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
+	answerMessageConfig.ReplyToMessageID = update.Message.MessageID
+
+	if _, err := b.bot.Send(answerMessageConfig); err != nil {
+		log.Error().Err(err).Msg("Cannot send answer")
+	}
+}
+
 func (b *Bot) handleMessage(update tgbotapi.Update) {
 	var botMessage string
 
+	chatID := update.Message.Chat.ID
+
 	log.Debug().Msgf("Message from %s", update.Message.From.UserName)
 
-	answer, err := b.assistant.GetAnswer(update.Message.Chat.ID, update.Message.Text)
+	msgRemain, err := b.subscrService.GetMessagesRemain(chatID)
+	if err != nil {
+		log.Error().Err(err).Msg("Cannot get number of messages remain")
+	} else if msgRemain < 1 {
+		b.sendPayMessage(update)
+
+		return
+	}
+
+	answer, err := b.assistant.GetAnswer(chatID, update.Message.Text)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot get answer")
 
 		botMessage = "Sorry, I can't answer right now. Please try again later."
 	} else {
-		b.subscrService.IncreaseMessageCount(update.Message.Chat.ID)
+		b.subscrService.IncreaseMessageCount(chatID)
 
 		botMessage = answer
 	}
 
-	answerMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, botMessage)
+	botMessage = fmt.Sprintf("%s\n\n(messages left: %d)", botMessage, msgRemain)
+
+	answerMessageConfig := tgbotapi.NewMessage(chatID, botMessage)
 	answerMessageConfig.ReplyToMessageID = update.Message.MessageID
 
 	if _, err := b.bot.Send(answerMessageConfig); err != nil {
