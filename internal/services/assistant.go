@@ -108,8 +108,6 @@ func (s *ChatGPTService) runAndWait(threadID string) error {
 			return err
 		}
 
-		log.Debug().Msgf("Run status: %s", run.Status)
-
 		if run.Status == openai.RunStatusCompleted {
 			break
 		}

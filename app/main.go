@@ -17,6 +17,7 @@ type Config struct {
 	OpenaiAPIKey      string `split_words:"true"`
 	OpenaiAssistantID string `split_words:"true"`
 	Debug             bool   `split_words:"true"`
+	PaymentToken      string `split_words:"true"`
 }
 
 func loadConfig() (*Config, error) {
@@ -54,6 +55,7 @@ func NewApp() (*App, error) {
 	}
 
 	chatsRepo := repo.NewChatsRepo(dbConn)
+	invoicesRepo := repo.NewInvoicesRepo(dbConn)
 
 	chatGPTService, err := services.NewChatGPTService(chatsRepo, cfg.OpenaiAPIKey, cfg.OpenaiAssistantID)
 	if err != nil {
@@ -62,14 +64,14 @@ func NewApp() (*App, error) {
 		return nil, err
 	}
 
-	subscrService, err := services.NewSubscriptionService(chatsRepo, cfg.FreeMessagesCount)
+	subscrService, err := services.NewSubscriptionService(chatsRepo, invoicesRepo, cfg.FreeMessagesCount)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create subscription service")
 
 		return nil, err
 	}
 
-	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService)
+	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService, cfg.PaymentToken)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")
 
