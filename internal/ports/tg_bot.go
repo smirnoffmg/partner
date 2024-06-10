@@ -44,6 +44,10 @@ func NewTGBot(author string, tgBotToken string, assistant svc.IAssistant, subscr
 	}, nil
 }
 
+func (b *Bot) SetDebug(debug bool) {
+	b.bot.Debug = debug
+}
+
 func (b *Bot) handleCommand(update tgbotapi.Update) {
 	if update.Message.Command() == "info" {
 		infoMsgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(infoMessage, b.author))
@@ -124,8 +128,6 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 		}
 
 		invoiceMsg.ProviderData = string(providerDataJSON)
-
-		log.Debug().Interface("invoiceMsg", invoiceMsg).Msg("Invoice message")
 
 		if _, err := b.bot.Send(invoiceMsg); err != nil {
 			log.Error().Err(err).Msg("Cannot send invoice")

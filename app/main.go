@@ -81,6 +81,9 @@ func NewApp() (*App, error) {
 	subscrService.SetPaymentInfo(cfg.MsgPack, cfg.PricePerMsgPack, cfg.PriceCurrency, cfg.PaymentDescription)
 
 	bot, err := ports.NewTGBot(cfg.Author, cfg.TelegramBotToken, chatGPTService, subscrService, cfg.PaymentToken)
+
+	bot.SetDebug(cfg.Debug)
+
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")
 

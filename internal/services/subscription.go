@@ -130,7 +130,7 @@ func (s *SubscriptionService) ProcessPayment(payload string) error {
 		return fmt.Errorf("cannot update invoice with ID: %d", invoiceIDInt)
 	}
 
-	if err := s.chatsRepo.Update(chatIDInt, map[string]interface{}{"paid_messages_count": chat.PaidMessagesCount + s.msgPack}); err != nil {
+	if err := s.chatsRepo.Update(chatIDInt, map[string]interface{}{"paid_messages_count": chat.PaidMessagesCount + s.msgPack + 1}); err != nil {
 		return fmt.Errorf("cannot update chat with ID: %d", chatIDInt)
 	}
 
