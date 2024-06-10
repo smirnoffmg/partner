@@ -13,6 +13,7 @@ type Bot struct {
 	assistant     svc.IAssistant
 	subscrService *svc.SubscriptionService
 	author        string
+	paymentToken  string
 }
 
 const (
@@ -22,7 +23,7 @@ const (
 	freeMessagesCount = 50
 )
 
-func NewTGBot(author string, tgBotToken string, assistant svc.IAssistant, subscrService *svc.SubscriptionService) (*Bot, error) {
+func NewTGBot(author string, tgBotToken string, assistant svc.IAssistant, subscrService *svc.SubscriptionService, paymentToken string) (*Bot, error) {
 	bot, err := tgbotapi.NewBotAPI(tgBotToken)
 	if err != nil {
 		log.Error().Err(err).Msg("Cannot create bot")
@@ -38,6 +39,7 @@ func NewTGBot(author string, tgBotToken string, assistant svc.IAssistant, subscr
 		assistant:     assistant,
 		subscrService: subscrService,
 		author:        author,
+		paymentToken:  paymentToken,
 	}, nil
 }
 
@@ -61,9 +63,39 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 	}
 
 	if update.Message.Command() == "pay" {
-		payMsgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf(payMessage, b.author, update.Message.Chat.ID))
-		if _, err := b.bot.Send(payMsgConfig); err != nil {
-			log.Error().Err(err).Msg("Cannot send pay message")
+		// create and send invoice
+		invoice, err := b.subscrService.CreateInvoice(update.Message.Chat.ID)
+
+		if err != nil {
+			log.Error().Err(err).Msg("Cannot create invoice")
+
+			return
+		}
+
+		payload := fmt.Sprintf("%d#%d", invoice.TelegramChatID, invoice.ID)
+
+		prices := []tgbotapi.LabeledPrice{
+			{
+				Label:  invoice.Description,
+				Amount: int(invoice.Amount),
+			},
+		}
+
+		invoiceMsg := tgbotapi.NewInvoice(
+			invoice.TelegramChatID,
+			invoice.Title,
+			invoice.Description,
+			payload,
+			b.paymentToken,
+			"",
+			invoice.Currency,
+			prices)
+
+		invoiceMsg.MaxTipAmount = 0
+		invoiceMsg.SuggestedTipAmounts = []int{}
+
+		if _, err := b.bot.Send(invoiceMsg); err != nil {
+			log.Error().Err(err).Msg("Cannot send invoice")
 		}
 
 		return
@@ -85,8 +117,6 @@ func (b *Bot) handleMessage(update tgbotapi.Update) {
 	var botMessage string
 
 	chatID := update.Message.Chat.ID
-
-	log.Debug().Msgf("Message from %s", update.Message.From.UserName)
 
 	msgRemain, err := b.subscrService.GetMessagesRemain(chatID)
 	if err != nil {
@@ -118,12 +148,79 @@ func (b *Bot) handleMessage(update tgbotapi.Update) {
 	}
 }
 
+func (b *Bot) handlePreCheckoutQuery(update tgbotapi.Update) {
+	log.Info().Interface("preCheckoutQuery", update.PreCheckoutQuery).Msg("PreCheckoutQuery")
+
+	errMsg := ""
+	check, err := b.subscrService.IsInvoiceOK(update.PreCheckoutQuery.InvoicePayload)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Cannot check invoice")
+
+		errMsg = "Cannot check invoice"
+	}
+
+	if !check {
+		errMsg = "Invoice already paid"
+	}
+
+	pca := tgbotapi.PreCheckoutConfig{
+		PreCheckoutQueryID: update.PreCheckoutQuery.ID,
+		OK:                 check,
+		ErrorMessage:       errMsg,
+	}
+
+	if _, err := b.bot.Request(pca); err != nil {
+		log.Error().Err(err).Msg("Cannot answer preCheckoutQuery")
+	}
+}
+
+func (b *Bot) handlePayment(update tgbotapi.Update) {
+	log.Info().Interface("payment", update.Message.SuccessfulPayment).Msg("SuccessfulPayment")
+
+	err := b.subscrService.ProcessPayment(update.Message.SuccessfulPayment.InvoicePayload)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Cannot process payment")
+
+		return
+	}
+
+	newMessagesRemain, err := b.subscrService.GetMessagesRemain(update.Message.Chat.ID)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Cannot get messages remain")
+
+		return
+	}
+
+	msg := fmt.Sprintf("Thank you for payment! You have %d messages left", newMessagesRemain)
+
+	answerMessageConfig := tgbotapi.NewMessage(update.Message.Chat.ID, msg)
+
+	if _, err := b.bot.Send(answerMessageConfig); err != nil {
+		log.Error().Err(err).Msg("Cannot send answer")
+	}
+}
+
 func (b *Bot) Start() error {
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 30
 	updates := b.bot.GetUpdatesChan(updateConfig)
 
 	for update := range updates {
+		if update.PreCheckoutQuery != nil {
+			go b.handlePreCheckoutQuery(update)
+
+			continue
+		}
+
+		if update.Message.SuccessfulPayment != nil {
+			go b.handlePayment(update)
+
+			continue
+		}
+
 		if update.Message == nil {
 			continue
 		}

@@ -22,7 +22,7 @@ func NewDBConn(dbDsn string) (*gorm.DB, error) {
 
 	log.Info().Msg("Connected to database")
 
-	if err := db.AutoMigrate(&entities.Chat{}); err != nil {
+	if err := db.AutoMigrate(&entities.Chat{}, &entities.Invoice{}); err != nil {
 		log.Error().Err(err).Msg("Failed to migrate database")
 
 		return nil, err

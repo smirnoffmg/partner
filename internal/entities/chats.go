@@ -13,8 +13,8 @@ type Chat struct {
 
 	ThreadID string `gorm:"unique"` // chatgpt thread id
 
-	UserMessagesCount  int32 // total messages from user in telegram chat
-	PayedMessagesCount int32 // number of messages user paid for
+	UserMessagesCount int32 // total messages from user in telegram chat
+	PaidMessagesCount int32 // number of messages user paid for
 }
 
 func (c Chat) String() string {
