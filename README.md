@@ -31,14 +31,28 @@ Partner is a Telegram bot that integrates with OpenAI's ChatGPT Assistant to pro
 2. **Create a `.env` file** with the following content:
 
     ```env
-    PRTNR_NAME="Example Partner"
+    PRTNR_AUTHOR="@not_again_please"
+    PRTNR_DEBUG=1
     PRTNR_TELEGRAM_BOT_TOKEN=
     PRTNR_OPENAI_API_KEY=
     PRTNR_OPENAI_ASSISTANT_ID=
     PRTNR_DB_DSN="host=db user=postgres password=postgres dbname=postgres"
 
+    # payments
+    PRTNR_FREE_MESSAGES_COUNT=50
+    PRTNR_PAYMENT_DESCRIPTION="Some description about how cool your bot is (50 messages)"
+    PRTNR_PAYMENT_TOKEN=
+    PRTNR_PRICE_PER_MSG_PACK=99000
+    PRTNR_PRICE_CURRENCY=EUR
+    PRTNR_MSG_PACK=50
+
+    TZ=Asia/Yerevan
+
     POSTGRES_USER=postgres
     POSTGRES_PASSWORD=postgres
+
+    SENTRY_DSN=
+
     ```
 
 3. **Run docker-compose**:
