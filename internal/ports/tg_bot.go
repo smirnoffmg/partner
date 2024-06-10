@@ -107,7 +107,7 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 							"currency": invoice.Currency,
 						},
 						"vat_code": 1,
-						"quantity": 1,
+						"quantity": "1.00",
 					},
 				},
 			},
@@ -123,9 +123,9 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 			return
 		}
 
-		log.Debug().Interface("providerData", string(providerDataJSON)).Msg("ProviderData")
-
 		invoiceMsg.ProviderData = string(providerDataJSON)
+
+		log.Debug().Interface("invoiceMsg", invoiceMsg).Msg("Invoice message")
 
 		if _, err := b.bot.Send(invoiceMsg); err != nil {
 			log.Error().Err(err).Msg("Cannot send invoice")
