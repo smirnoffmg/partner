@@ -7,6 +7,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/rs/zerolog/log"
 	"github.com/smirnoffmg/partner/app"
 )
@@ -14,6 +15,18 @@ import (
 const cancelTimeout = 3 * time.Second
 
 func main() {
+	sentryDsn := os.Getenv("SENTRY_DSN")
+
+	if sentryDsn != "" {
+		if err := sentry.Init(sentry.ClientOptions{
+			Dsn: sentryDsn,
+		}); err != nil {
+			log.Error().Err(err).Msg("Cannot init sentry")
+		} else {
+			defer sentry.Flush(cancelTimeout)
+		}
+	}
+
 	ctx := context.Background()
 
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, os.Kill, syscall.SIGTERM)
