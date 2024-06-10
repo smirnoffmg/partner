@@ -1,6 +1,7 @@
 package ports
 
 import (
+	"encoding/json"
 	"fmt"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -93,6 +94,38 @@ func (b *Bot) handleCommand(update tgbotapi.Update) {
 
 		invoiceMsg.MaxTipAmount = 0
 		invoiceMsg.SuggestedTipAmounts = []int{}
+		invoiceMsg.NeedEmail = true
+		invoiceMsg.SendEmailToProvider = true
+
+		providerData := map[string]interface{}{
+			"receipt": map[string]interface{}{
+				"items": []map[string]interface{}{
+					{
+						"description": invoice.Description,
+						"amount": map[string]string{
+							"value":    fmt.Sprintf("%d.00", invoice.Amount/100),
+							"currency": invoice.Currency,
+						},
+						"vat_code": 1,
+						"quantity": 1,
+					},
+				},
+			},
+		}
+
+		var providerDataJSON []byte
+
+		providerDataJSON, err = json.Marshal(providerData)
+
+		if err != nil {
+			log.Error().Err(err).Msg("Cannot marshal providerData")
+
+			return
+		}
+
+		log.Debug().Interface("providerData", string(providerDataJSON)).Msg("ProviderData")
+
+		invoiceMsg.ProviderData = string(providerDataJSON)
 
 		if _, err := b.bot.Send(invoiceMsg); err != nil {
 			log.Error().Err(err).Msg("Cannot send invoice")
