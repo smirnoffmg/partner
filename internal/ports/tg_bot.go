@@ -250,13 +250,15 @@ func (b *Bot) Start() error {
 			continue
 		}
 
-		if update.Message.SuccessfulPayment != nil {
-			go b.handlePayment(update)
+		if update.Message == nil {
+			log.Debug().Interface("update", update).Msg("Unhandled update")
 
 			continue
 		}
 
-		if update.Message == nil {
+		if update.Message.SuccessfulPayment != nil {
+			go b.handlePayment(update)
+
 			continue
 		}
 
